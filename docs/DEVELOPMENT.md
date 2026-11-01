@@ -34,7 +34,7 @@ eim run 'sh tools/clean.sh && sh tools/build.sh' webcam-idf-master
 | 产物 | 用途 |
 | --- | --- |
 | `dist/factory-merged.bin` | 完整镜像，写入 `0x0`，覆盖镜像范围内的固件、分区和设置 |
-| `dist/mosaico-webcam-0.1.0-dev.irisfw` | Iris 0.2 系统更新包，通过 Vibe Mode 安装 |
+| `dist/mosaico-webcam-0.1.0.irisfw` | Iris 0.2 系统更新包，通过 Vibe Mode 安装 |
 | `dist/app.bin` | 应用镜像，仅用于分区布局兼容的应用更新 |
 | `dist/manifest.json` | 构建配置、依赖版本、偏移与源码哈希 |
 | `dist/SHA256SUMS` | 主要产物的 SHA-256 校验值 |
