@@ -1,0 +1,27 @@
+menu "Mosaico Webcam"
+    config WEBCAM_STATIC_FRAME
+        bool "M1 USB bring-up with a static black JPEG"
+        default n
+        help
+            Keep the camera powered down and send valid VGA black frames.
+    config WEBCAM_ROTATION
+        int "Default USB video rotation in degrees (0, 90, 180, 270)"
+        range 0 270
+        default 0
+        help
+            Uses the sensor's landscape orientation by default.
+            Local preview compensates this rotation to follow device orientation.
+            Used when no saved rotation exists; adjustable from Settings at runtime.
+    config WEBCAM_SENSOR_MIRROR_Y
+        bool "Sensor mounting correction: vertical mirror"
+        default y
+    config WEBCAM_SENSOR_MIRROR_X
+        bool "Sensor mounting correction: horizontal mirror"
+        default y
+        help
+            Correct the SC101IOT module's horizontally reversed output.
+            Applied after rotation to both USB video and local preview.
+    config WEBCAM_DIAGNOSTICS
+        bool "Log pipeline statistics every five seconds over UART"
+        default y
+endmenu

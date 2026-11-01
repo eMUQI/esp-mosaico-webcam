@@ -1,0 +1,22 @@
+diff --git a/components/esp-mosaico-bsp/onboard/display.c b/components/esp-mosaico-bsp/onboard/display.c
+index aa8b656..ca654f4 100644
+--- a/components/esp-mosaico-bsp/onboard/display.c
++++ b/components/esp-mosaico-bsp/onboard/display.c
+@@ -15,7 +15,7 @@
+ #include "bsp/mosaico_boot_handoff.h"
+ #include "sdkconfig.h"
+ 
+-#define BSP_LCD_DMA_CHUNK_LINES 8
++#define BSP_LCD_DMA_CHUNK_LINES 480
+ 
+ static const char *TAG = "S31-Mosaico-LCD";
+ #if CONFIG_BSP_CO5300_ENABLE_TE
+@@ -260,7 +260,7 @@ esp_err_t bsp_display_new(const bsp_display_config_t *config, esp_lcd_panel_hand
+     }
+ 
+     esp_lcd_panel_io_spi_config_t io_config = CO5300_PANEL_IO_QSPI_CONFIG(BSP_LCD_CS, NULL, NULL);
+-    io_config.flags.psram_dma_direct = false;
++    io_config.flags.psram_dma_direct = true;
+     ret = esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)BSP_LCD_SPI_HOST, &io_config, &s_panel_io);
+     if (ret != ESP_OK) {
+         spi_bus_free(BSP_LCD_SPI_HOST);

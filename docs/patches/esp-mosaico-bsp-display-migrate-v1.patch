@@ -1,0 +1,183 @@
+diff --git a/components/esp-mosaico-bsp/onboard/display.c b/components/esp-mosaico-bsp/onboard/display.c
+index 886235d..ca654f4 100644
+--- a/components/esp-mosaico-bsp/onboard/display.c
++++ b/components/esp-mosaico-bsp/onboard/display.c
+@@ -12,12 +12,10 @@
+ #include "esp_lcd_panel_io.h"
+ #include "esp_lcd_touch_cst9220.h"
+ #include "esp_log.h"
+-#include "freertos/FreeRTOS.h"
+-#include "freertos/semphr.h"
+ #include "bsp/mosaico_boot_handoff.h"
+ #include "sdkconfig.h"
+
+-#define BSP_LCD_DMA_CHUNK_LINES 32
++#define BSP_LCD_DMA_CHUNK_LINES 480
+
+ static const char *TAG = "S31-Mosaico-LCD";
+ #if CONFIG_BSP_CO5300_ENABLE_TE
+@@ -42,89 +40,6 @@ static bool s_display_paused;
+ static bool s_display_sleeping;
+ static bool s_display_deep_standby;
+
+-#if CONFIG_BSP_CO5300_ENABLE_TE && CONFIG_BSP_DISPLAY_LVGL_ENABLE
+-static SemaphoreHandle_t s_te_sem;
+-static bool s_te_wait_pending;
+-static bool s_te_timed_out;
+-
+-static void IRAM_ATTR display_te_isr(void *arg)
+-{
+-    BaseType_t wake = pdFALSE;
+-    xSemaphoreGiveFromISR((SemaphoreHandle_t)arg, &wake);
+-    if (wake) {
+-        portYIELD_FROM_ISR();
+-    }
+-}
+-
+-static void display_refresh_start(lv_event_t *event)
+-{
+-    (void)event;
+-    s_te_wait_pending = true;
+-}
+-
+-static esp_err_t display_draw_partial(lv_display_t *display, esp_lcd_panel_handle_t panel,
+-                                      int x_start, int y_start, int x_end, int y_end,
+-                                      const void *pixels, void *user_data)
+-{
+-    (void)display;
+-    (void)user_data;
+-    if (s_te_wait_pending) {
+-        s_te_wait_pending = false;
+-        // Discard idle-time edges; all areas in this refresh share one fresh TE edge.
+-        (void)xSemaphoreTake(s_te_sem, 0);
+-        const bool ready = xSemaphoreTake(s_te_sem, pdMS_TO_TICKS(25)) == pdTRUE;
+-        if (!ready && !s_te_timed_out) {
+-            ESP_LOGW(TAG, "TE wait timed out (25 ms); continuing partial refresh without sync");
+-        } else if (ready && s_te_timed_out) {
+-            ESP_LOGI(TAG, "TE synchronization recovered");
+-        }
+-        s_te_timed_out = !ready;
+-    }
+-    // The adapter's DMA completion callback owns LVGL's flush-ready notification.
+-    return esp_lcd_panel_draw_bitmap(panel, x_start, y_start, x_end, y_end, pixels);
+-}
+-
+-static void display_te_delete(void)
+-{
+-    if (s_te_sem) {
+-        gpio_isr_handler_remove(BSP_LCD_TE);
+-        vSemaphoreDelete(s_te_sem);
+-        s_te_sem = NULL;
+-    }
+-}
+-
+-static esp_err_t display_te_init(void)
+-{
+-    s_te_sem = xSemaphoreCreateBinary();
+-    ESP_RETURN_ON_FALSE(s_te_sem, ESP_ERR_NO_MEM, TAG, "allocate TE semaphore failed");
+-    s_te_wait_pending = true;
+-    s_te_timed_out = false;
+-    // CO5300 mode 1 drives TE high during vertical blanking (datasheet section 5.3).
+-    const gpio_config_t config = {
+-        .pin_bit_mask = 1ULL << BSP_LCD_TE,
+-        .mode = GPIO_MODE_INPUT,
+-        .pull_up_en = GPIO_PULLUP_ENABLE,
+-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+-        .intr_type = GPIO_INTR_POSEDGE,
+-    };
+-    esp_err_t ret = gpio_config(&config);
+-    if (ret == ESP_OK) {
+-        ret = gpio_install_isr_service(0);
+-        if (ret == ESP_ERR_INVALID_STATE) {
+-            ret = ESP_OK;
+-        }
+-    }
+-    if (ret == ESP_OK) {
+-        ret = gpio_isr_handler_add(BSP_LCD_TE, display_te_isr, s_te_sem);
+-    }
+-    if (ret != ESP_OK) {
+-        vSemaphoreDelete(s_te_sem);
+-        s_te_sem = NULL;
+-    }
+-    return ret;
+-}
+-#endif
+-
+ static const co5300_lcd_init_cmd_t s_vendor_init[] = {
+     {0x11, NULL, 0, 600},
+     {0xFE, (uint8_t[]){0x20}, 1, 0},
+@@ -309,12 +224,6 @@ static void round_qspi_area(lv_area_t *area, void *user_data)
+     area->x1 = (x1 / 4) * 4;
+     x2 = ((x2 + 4) / 4) * 4 - 1;
+     area->x2 = x2 > max_x ? max_x : x2;
+-    const int max_y = BSP_LCD_V_RES - 1;
+-    int y1 = area->y1 < 0 ? 0 : (area->y1 > max_y ? max_y : area->y1);
+-    int y2 = area->y2 < 0 ? 0 : (area->y2 > max_y ? max_y : area->y2);
+-    // CO5300 requires even row starts and row counts; LVGL includes the end coordinate.
+-    area->y1 = y1 & ~1;
+-    area->y2 = y2 | 1;
+ }
+ #endif
+
+@@ -486,16 +395,14 @@ lv_display_t *bsp_display_start_with_config(const bsp_display_config_t *config)
+      * switches its buffer-priming and pipeline-release heuristics onto paths that assume it
+      * does. Rotation lives entirely in MADCTL, so the adapter always sees an upright display.
+      */
+-    esp_lv_adapter_display_config_t display_config = ESP_LV_ADAPTER_DISPLAY_SPI_WITH_PSRAM_DEFAULT_CONFIG(
+-        s_panel, s_panel_io, BSP_LCD_H_RES, BSP_LCD_V_RES, ESP_LV_ADAPTER_ROTATE_0);
+ #if CONFIG_BSP_CO5300_ENABLE_TE
+-    const bool te_enabled = active.tear_avoid_mode == ESP_LV_ADAPTER_TEAR_AVOID_MODE_TE_SYNC;
+-    if (te_enabled) {
+-        // TE_SYNC forces full rendering in the adapter; the BSP synchronizes partial flushes.
+-        display_config.profile.require_double_buffer = false;
+-        active.tear_avoid_mode = ESP_LV_ADAPTER_TEAR_AVOID_MODE_NONE;
+-    }
++    esp_lv_adapter_display_config_t display_config = ESP_LV_ADAPTER_DISPLAY_SPI_WITH_PSRAM_TE_DEFAULT_CONFIG(
++        s_panel, s_panel_io, BSP_LCD_H_RES, BSP_LCD_V_RES, ESP_LV_ADAPTER_ROTATE_0, BSP_LCD_TE,
++        BSP_LCD_PIXEL_CLOCK_HZ, BSP_LCD_DATA_WIDTH, BSP_LCD_BITS_PER_PIXEL);
++    ESP_LOGI(TAG, "TE anti-tearing path enabled: GPIO=%d mode=%d", BSP_LCD_TE, active.tear_avoid_mode);
+ #else
++    esp_lv_adapter_display_config_t display_config = ESP_LV_ADAPTER_DISPLAY_SPI_WITH_PSRAM_DEFAULT_CONFIG(
++        s_panel, s_panel_io, BSP_LCD_H_RES, BSP_LCD_V_RES, ESP_LV_ADAPTER_ROTATE_0);
+     if (active.tear_avoid_mode == ESP_LV_ADAPTER_TEAR_AVOID_MODE_TE_SYNC) {
+         ESP_LOGW(TAG, "TE_SYNC requested while CONFIG_BSP_CO5300_ENABLE_TE is disabled; using default mode");
+         active.tear_avoid_mode = ESP_LV_ADAPTER_TEAR_AVOID_MODE_DEFAULT;
+@@ -519,28 +426,6 @@ lv_display_t *bsp_display_start_with_config(const bsp_display_config_t *config)
+         s_display = NULL;
+         return NULL;
+     }
+-#if CONFIG_BSP_CO5300_ENABLE_TE
+-    if (te_enabled) {
+-        ret = display_te_init();
+-        if (ret == ESP_OK) {
+-            const esp_lv_adapter_draw_bitmap_callbacks_t callbacks = {
+-                .custom_draw_bitmap = display_draw_partial,
+-            };
+-            ret = esp_lv_adapter_set_draw_bitmap_callbacks(s_display, &callbacks, NULL);
+-        }
+-        if (ret == ESP_OK) {
+-            lv_display_add_event_cb(s_display, display_refresh_start, LV_EVENT_REFR_START, NULL);
+-        }
+-        if (ret != ESP_OK) {
+-            ESP_LOGE(TAG, "partial-refresh TE setup failed (%s)", esp_err_to_name(ret));
+-            esp_lv_adapter_unregister_display(s_display);
+-            s_display = NULL;
+-            display_te_delete();
+-            return NULL;
+-        }
+-        ESP_LOGI(TAG, "partial refresh: PSRAM single buffer, TE GPIO%d once per refresh", BSP_LCD_TE);
+-    }
+-#endif
+     if (active.enable_touch) {
+         ret = bsp_touch_new(active.rotation, &s_touch);
+         if (ret == ESP_OK) {
+@@ -555,9 +440,6 @@ lv_display_t *bsp_display_start_with_config(const bsp_display_config_t *config)
+         ESP_LOGE(TAG, "LVGL adapter start failed (%s)", esp_err_to_name(ret));
+         esp_lv_adapter_unregister_display(s_display);
+         s_display = NULL;
+-#if CONFIG_BSP_CO5300_ENABLE_TE
+-        display_te_delete();
+-#endif
+         return NULL;
+     }
+     return s_display;

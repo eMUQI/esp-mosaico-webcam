@@ -1,0 +1,8 @@
+/build*/
+/managed_components/
+/sdkconfig
+/sdkconfig.old
+/dist/
+/backups/
+.DS_Store
+__pycache__/

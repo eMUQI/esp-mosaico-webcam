@@ -1,0 +1,12 @@
+dependencies:
+  idf: ">=6.2"
+  espressif/esp_lv_present: "0.1.1"
+  espressif/esp_display_present: "1.2.0"
+  lvgl/lvgl: "^9.5.0,<9.6.0"
+  esp-mosaico-bsp:
+    path: ../vendor/esp-mosaico-bsp/components/esp-mosaico-bsp
+  mosaico_module_camera:
+    path: ../vendor/esp-mosaico-bsp/components/mosaico_module_camera
+  espressif/usb_device_uvc:
+    version: "1.3.1"
+    override_path: ../vendor/usb_device_uvc

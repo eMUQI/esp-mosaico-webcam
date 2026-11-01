@@ -1,0 +1,6 @@
+[submodule "vendor/esp-mosaico-bsp"]
+	path = vendor/esp-mosaico-bsp
+	url = https://github.com/esp-mosaico/esp-mosaico-bsp.git
+[submodule "vendor/esp-mosaico-utils"]
+	path = vendor/esp-mosaico-utils
+	url = https://github.com/esp-mosaico/esp-mosaico-utils.git
