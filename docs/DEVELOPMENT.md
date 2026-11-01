@@ -19,6 +19,10 @@ eim run 'sh tools/build.sh' webcam-idf-master
 
 已激活匹配 SDK 环境时，可直接运行 `sh tools/build.sh`。脚本核对 SDK 提交，应用板级支持包（BSP）显示补丁，构建固件，检查 ELF 中的 USB 描述符，最后打包镜像。
 
+打包使用固定版本的官方 ESP-Mosaico Utils 子模块，需要 Python `cryptography`；缺失时在 SDK 环境中执行 `python -m pip install cryptography`。产物包括 `.irisfw` 安装包和包含 Vibe Mode 的完整有线 BIN。
+
+已有源码目录需在 `idf.py menuconfig` 中选择 QIO Flash 模式、启用应用回滚并由应用确认安装状态，或从默认配置重新生成 `sdkconfig`。打包脚本会拒绝不兼容的配置。
+
 干净重建：
 
 ```sh
