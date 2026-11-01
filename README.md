@@ -40,7 +40,7 @@ Tap **Screen Off / Pause preview** to turn off the display while USB video conti
 
 ## Flashing
 
-For Iris installation, use `dist/mosaico-webcam-0.1.0-dev.irisfw` in the official Iris installer or Ideas **Add Iris firmware** option. Enter Vibe Mode **0.2.0 or later** first; hold the **AI** button while restarting to enter it on devices with the official recovery bootloader. Back up application data before changing layouts. The package updates the partition table and application while preserving Vibe Mode and system data. This integration supports firmware installation only. USB remains UVC video; Iris previews and runtime control are not provided.
+For Iris installation, use `dist/mosaico-webcam-0.1.0.irisfw` in the official Iris installer or Ideas **Add Iris firmware** option. Enter Vibe Mode **0.2.0 or later** first; hold the **AI** button while restarting to enter it on devices with the official recovery bootloader. Back up application data before changing layouts. The package updates the partition table and application while preserving Vibe Mode and system data. This integration supports firmware installation only. USB remains UVC video; Iris previews and runtime control are not provided.
 
 Build the firmware as described below to generate `dist/factory-merged.bin`. This full image is written at **`0x0`** and overwrites the existing firmware, partition layout, and non-volatile storage (NVS) settings within its range. Back up any data you need to keep.
 
