@@ -81,13 +81,16 @@ def main():
             raise SystemExit(f"Unexpected build setting: {key}={config.get(key)!r}")
     check(BUILD)
     bundle, vibe_entry, vibe = iris_bundle(description, flash)
-    iris_name = f"mosaico-webcam-{description['project_version']}.irisfw"
+    prefix = f"mosaico-webcam-{description['project_version']}"
+    iris_name = f"{prefix}.irisfw"
+    app_name = f"{prefix}-app.bin"
+    factory_name = f"{prefix}-factory-merged.bin"
     if DIST.exists():
         shutil.rmtree(DIST)
     DIST.mkdir()
     settings = flash["flash_settings"]
     command = [sys.executable, "-m", "esptool", "--chip", "esp32s31", "merge-bin",
-               "--output", str(DIST / "factory-merged.bin")]
+               "--output", str(DIST / factory_name)]
     for name in ("flash_mode", "flash_freq", "flash_size"):
         command += ["--" + name.replace("_", "-"), settings[name]]
     for offset, filename in sorted(flash["flash_files"].items(), key=lambda item: int(item[0], 0)):
@@ -95,7 +98,7 @@ def main():
     command += [vibe_entry["offset"], str(vibe)]
     subprocess.run(command, check=True)
     (DIST / iris_name).write_bytes(bundle)
-    shutil.copyfile(BUILD / "mosaico-webcam.bin", DIST / "app.bin")
+    shutil.copyfile(BUILD / "mosaico-webcam.bin", DIST / app_name)
     shutil.copyfile(ROOT / "dependencies.lock", DIST / "dependencies.lock")
     shutil.copyfile(ROOT / "README.md", DIST / "README.md")
     shutil.copyfile(ROOT / "README.zh-CN.md", DIST / "README.zh-CN.md")
@@ -138,7 +141,7 @@ def main():
                           for p in sources if p.is_file()},
     }
     (DIST / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    artifacts = [iris_name, "app.bin", "factory-merged.bin", "manifest.json", "dependencies.lock", "esp-idf-local.patch",
+    artifacts = [iris_name, app_name, factory_name, "manifest.json", "dependencies.lock", "esp-idf-local.patch",
                  "sdkconfig", "README.md", "README.zh-CN.md", "esp-idf.commit",
                  "TESTING.md", "LICENSE", "tinyusb-video-recovery.patch",
                  "esp-mosaico-bsp-local.patch"]

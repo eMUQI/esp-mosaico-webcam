@@ -21,7 +21,7 @@ Turn an ESP-Mosaico (ESP32-S31) into a USB webcam with a touchscreen preview and
 Download the firmware from [Releases](https://github.com/eMUQI/esp-mosaico-webcam/releases/latest). Back up any data you need to keep, then choose one method:
 
 - **Iris:** Download the `.irisfw` package. Hold **AI** while restarting to enter Vibe Mode, then install through the official Iris installer or Ideas **Add Iris firmware** option. Requires Vibe Mode **0.2.0 or later**.
-- **Wired flashing:** Download `factory-merged.bin`. Hold **BOOT** and reset to enter download mode, then write the image at **`0x0`** through the board's download interface. Release BOOT and restart afterward. This replaces the existing firmware and settings. See the [flashing commands](docs/DEVELOPMENT.md#bin-与烧录).
+- **Wired flashing:** Download `mosaico-webcam-0.2.0-factory-merged.bin`. Hold **BOOT** and reset to enter download mode, then write the image at **`0x0`** through the board's download interface. Release BOOT and restart afterward. This replaces the existing firmware and settings. See the [flashing commands](docs/DEVELOPMENT.md#bin-与烧录).
 
 ## Usage
 

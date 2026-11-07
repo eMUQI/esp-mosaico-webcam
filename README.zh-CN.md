@@ -21,7 +21,7 @@
 从 [Releases](https://github.com/eMUQI/esp-mosaico-webcam/releases/latest) 下载固件，安装前备份需要保留的数据，任选一种方式安装：
 
 - **Iris 安装**：下载 `.irisfw` 安装包。按住 **AI** 键重启进入 Vibe Mode，通过官方 Iris 安装器或 Ideas「添加 Iris 固件」安装。需要 **Vibe Mode 0.2.0 或更新版本**。
-- **有线烧录**：下载 `factory-merged.bin`，按住 **BOOT** 并复位进入下载模式，通过主板下载接口将镜像写入 **`0x0`**，完成后松开 BOOT 并重启。此方式会覆盖原固件和设置。具体命令见[烧录说明](docs/DEVELOPMENT.md#bin-与烧录)。
+- **有线烧录**：下载 `mosaico-webcam-0.2.0-factory-merged.bin`，按住 **BOOT** 并复位进入下载模式，通过主板下载接口将镜像写入 **`0x0`**，完成后松开 BOOT 并重启。此方式会覆盖原固件和设置。具体命令见[烧录说明](docs/DEVELOPMENT.md#bin-与烧录)。
 
 ## 使用
 
