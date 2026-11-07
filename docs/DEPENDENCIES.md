@@ -48,6 +48,8 @@ BSP 在配置阶段自动应用官方摄像头补丁：
 
 `vendor/usb_device_uvc/tusb/video-device-recovery.patch` 修复 TinyUSB 视频类的首包失败、续包失败、传输错误、取消及迟到完成事件处理。配置阶段复制视频类源码到构建目录并应用补丁，托管组件文件保持不变。补丁应用失败时中止构建。打包时保留该补丁，并在 `manifest.json` 中记录实际编译源码的哈希值。
 
+`vendor/usb_device_uvc/tusb/dwc2-suspend-status.patch` 修复 USB 恢复后残留的挂起中断导致固件停止提交视频帧的问题。DWC2 驱动清除挂起中断标志后，仅在 `DSTS.SUSPSTS` 仍置位时才上报挂起事件。构建配置只编译应用补丁后的驱动副本，补丁应用失败时中止构建。
+
 修改 USB 模式时，应同步更新描述符、协商校验、应用参数与 `tools/check_firmware.py`。
 
 ## 参考与许可

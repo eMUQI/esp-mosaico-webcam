@@ -29,6 +29,22 @@ set_source_files_properties("${video_source}" TARGET_DIRECTORY ${tusb_lib}
 target_sources(${tusb_lib} PRIVATE "${video_patched}")
 target_include_directories(${tusb_lib} PRIVATE "${tusb_dir}/src/class/video" "${COMPONENT_DIR}/include")
 
+set(dwc2_source "${tusb_dir}/src/portable/synopsys/dwc2/dcd_dwc2.c")
+set(dwc2_patched "${CMAKE_CURRENT_BINARY_DIR}/dcd_dwc2.c")
+set(dwc2_patch "${COMPONENT_DIR}/tusb/dwc2-suspend-status.patch")
+configure_file("${dwc2_source}" "${dwc2_patched}" COPYONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${dwc2_patch}")
+execute_process(COMMAND "${UVC_GIT}" apply --no-index "${dwc2_patch}"
+                WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+                RESULT_VARIABLE dwc2_patch_result ERROR_VARIABLE dwc2_patch_error)
+if(NOT dwc2_patch_result EQUAL 0)
+    message(FATAL_ERROR "TinyUSB DWC2 patch failed: ${dwc2_patch_error}")
+endif()
+set_source_files_properties("${dwc2_source}" TARGET_DIRECTORY ${tusb_lib}
+                            PROPERTIES HEADER_FILE_ONLY TRUE)
+target_sources(${tusb_lib} PRIVATE "${dwc2_patched}")
+target_include_directories(${tusb_lib} PRIVATE "${tusb_dir}/src/portable/synopsys/dwc2")
+
 target_include_directories(${tusb_lib} PUBLIC "${COMPONENT_DIR}/tusb")
 target_sources(${tusb_lib} PUBLIC "${COMPONENT_DIR}/tusb/usb_descriptors.c")
 
